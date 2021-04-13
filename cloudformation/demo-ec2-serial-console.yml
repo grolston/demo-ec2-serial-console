@@ -115,9 +115,9 @@ Resources:
       GroupDescription: "Rule only allows ping outbound"
       VpcId: !Ref pVpc
       SecurityGroupEgress:
-        - Description: Outbound unrestricted traffic
-          IpProtocol: "1"
-          CidrIp: 0.0.0.0/0
+        - Description: Outbound completely restricted
+          IpProtocol: "-1"
+          CidrIp: 127.0.0.1/32
       Tags:
         - Key: Name
           Value: !Ref pTagNameValue
