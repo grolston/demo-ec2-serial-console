@@ -112,8 +112,12 @@ Resources:
           - id: W29
             reason: This default security group is purposely open on all ports for egress for ease of adoption.
     Properties:
-      GroupDescription: "No Rules SG for No Network "
+      GroupDescription: "Rule only allows ping outbound"
       VpcId: !Ref pVpc
+      SecurityGroupEgress:
+        - Description: Outbound unrestricted traffic
+          IpProtocol: "icmp"
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
           Value: !Ref pTagNameValue
