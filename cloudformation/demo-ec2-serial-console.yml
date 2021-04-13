@@ -1,0 +1,204 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: demo solution for EC2 Serial Console Access
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: EC2 User Configs
+        Parameters:
+          - pAddEc2User
+          - pEc2User
+          - pEc2UserPassword
+      - Label:
+          default: "EC2 Configuration"
+        Parameters:
+          - pTagNameValue
+          - pOperatingSystem
+          - pInstanceType
+          - pRole
+          - pVolumeSize
+          - pEbsDeleteOnTermination
+      - Label:
+          default: "Network Configuration"
+        Parameters:
+          - pVpc
+          - pSubnet
+    ParameterLabels:
+      pRole:
+        default: "EC2 Instance Profile"
+      pOperatingSystem:
+        default: "Operating System"
+      pInstanceType:
+        default: "Instance Type"
+      pTagNameValue:
+        default: "EC2 Name"
+      pVolumeSize:
+        default: "Volume Size"
+      pEbsDeleteOnTermination:
+        default: "Delete EBS Volume on Termination"
+      pSubnet:
+        default: "Subnet"
+      pVpc:
+        default: "VPC"
+      pEc2User:
+        default: EC2 User
+      pEc2UserPassword:
+        default: Password
+      pAddEc2User:
+        default: Add EC2 User
+
+Parameters:
+  pRole:
+    Type: String
+    Default: csr-Ec2-Role-LP
+    Description: Enter the role name (instance profile). If you do not know what instance profiles are, leave default in place.
+  pSubnet:
+    Description: The subnet to launch the instance in to. It must be part of the VPC chosen above.
+    Type: AWS::EC2::Subnet::Id
+  pVpc:
+    Description: The VPC to launch the EC2 instance in to.
+    Type: AWS::EC2::VPC::Id
+  pOperatingSystem:
+    Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+    Default: "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-ebs"
+  pInstanceType:
+    Description: Desired Instance Size
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t3.nano
+      - t3.micro
+      - t3.small
+  pTagNameValue:
+    Description: "Required: Enter the tag name you'd like applied to the instance. Tag Name gives the name to the EC2 instance."
+    Type: String
+    MinLength: 1
+    Default: "demo-serial-console"
+  pVolumeSize:
+    Description:
+      Enter the number of GBs you want your volume to be. The minimum value
+      is 8 GBs
+    Type: Number
+    Default: 100
+    MinValue: 8
+  pEbsDeleteOnTermination:
+    Description: "Specify if the EBS volume should be deleted if EC2 is deleted."
+    Type: String
+    Default: true
+    AllowedValues:
+      - true
+      - false
+  pEc2User:
+    Description: "EC2 Username"
+    Type: String
+    MinLength: 1
+  pEc2UserPassword:
+    Description: "EC2 User Password"
+    Type: String
+    NoEcho: true
+    AllowedPattern : "^[a-zA-Z0-9]*$"
+    MinLength: 0
+    MaxLength: 41
+  pAddEc2User:
+    Description: Allow an EC2 user to be created for EC2 console access
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "true"
+
+Rules:
+  SubnetInVPC:
+    Assertions:
+      - Assert: !EachMemberIn
+          - !ValueOfAll
+            - AWS::EC2::Subnet::Id
+            - VpcId
+          - !RefAll "AWS::EC2::VPC::Id"
+        AssertDescription: All subnets must in the VPC
+
+Conditions:
+  cHasRole: !Not [!Equals ["", !Ref pRole]]
+  cAddEc2User: !Equals ["true", !Ref pAddEc2User]
+
+Resources:
+  rSecurityGroupDefault:
+    Type: AWS::EC2::SecurityGroup
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W5
+            reason: This default security group is purposely open to the world for egress for ease of adoption.
+          - id: W29
+            reason: This default security group is purposely open on all ports for egress for ease of adoption.
+    Properties:
+      GroupDescription: !Sub "No Rule SG for No Network "
+      VpcId: !Ref pVpc
+      Tags:
+        - Key: Name
+          Value: !Ref pTagNameValue
+
+  rLinuxEc2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref pOperatingSystem
+      InstanceType: !Ref pInstanceType
+      Monitoring: true
+      IamInstanceProfile: !If [cHasRole, !Ref pRole, !Ref "AWS::NoValue"]
+      SourceDestCheck: true
+      SubnetId: !Ref pSubnet
+      SecurityGroupIds:
+        - !Ref rSecurityGroupDefault
+      BlockDeviceMappings:
+        - DeviceName: "/dev/xvda"
+          Ebs:
+            VolumeSize: !Ref pVolumeSize
+            DeleteOnTermination: !Ref pEbsDeleteOnTermination
+      Tags:
+        - Key: Name
+          Value: !Ref pTagNameValue
+      UserData:
+        Fn::Base64: !Sub
+          - |
+            #!/bin/bash
+            ${addEc2User}
+          - {
+              addEc2User:
+                !If [cAddEc2User, !Sub 'adduser ${pEc2User} ; echo "${pEc2User}:${pEc2UserPassword}" | chpasswd', "", ],
+            }
+
+  ## Instance Profiles
+  ## EC2 IAM Roles
+  rEc2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:  !Sub "ec2-role-${AWS::StackName}"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ec2.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      Path: /
+      ManagedPolicyArns:
+      - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonEC2RoleforSSM'
+      - !Sub 'arn:${AWS::Partition}:iam::aws:policy/CloudWatchAgentServerPolicy'
+
+  rec2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub "ec2-profile-${AWS::StackName}"
+      Path: /
+      Roles:
+        - !Ref rEc2Role
+
+Outputs:
+  oLinuxEc2InstanceId:
+    Description: Resource ID of the newly created EC2 instance
+    Value: !Ref rLinuxEc2
+
+  oLinuxEc2PrivateIP:
+    Description: Private IP Address for EC2
+    Value: !GetAtt rLinuxEc2.PrivateIp
