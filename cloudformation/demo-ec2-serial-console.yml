@@ -148,6 +148,17 @@ Resources:
             adduser ${pEc2User}
             echo "${pEc2User}:${pEc2UserPassword}" | chpasswd
             echo "${pEc2User}  ALL=(ALL) NOPASSWD:ALL" | tee /etc/sudoers.d/${pEc2User}
+            ## disable sshd
+            systemctl stop sshd && systemctl disable sshd
+            ## disable ssm
+            systemctl stop amazon-ssm-agent && systemctl disable amazon-ssm-agent
+            ## Block all network traffic with IPTables
+            iptable -F
+            iptables -P INPUT DROP
+            iptables -P OUTPUT DROP
+            iptables -P FORWARD DROP
+            ## Kill local network
+            systemctl stop network && systemctl disable network
 
 
   ## Instance Profiles
