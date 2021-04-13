@@ -8,26 +8,22 @@ Metadata:
       - Label:
           default: EC2 User Configs
         Parameters:
-          - pAddEc2User
           - pEc2User
           - pEc2UserPassword
+      - Label:
+          default: "Network Configuration"
+        Parameters:
+          - pVpc
+          - pSubnet
       - Label:
           default: "EC2 Configuration"
         Parameters:
           - pTagNameValue
           - pOperatingSystem
           - pInstanceType
-          - pRole
           - pVolumeSize
           - pEbsDeleteOnTermination
-      - Label:
-          default: "Network Configuration"
-        Parameters:
-          - pVpc
-          - pSubnet
     ParameterLabels:
-      pRole:
-        default: "EC2 Instance Profile"
       pOperatingSystem:
         default: "Operating System"
       pInstanceType:
@@ -46,14 +42,8 @@ Metadata:
         default: EC2 User
       pEc2UserPassword:
         default: Password
-      pAddEc2User:
-        default: Add EC2 User
 
 Parameters:
-  pRole:
-    Type: String
-    Default: csr-Ec2-Role-LP
-    Description: Enter the role name (instance profile). If you do not know what instance profiles are, leave default in place.
   pSubnet:
     Description: The subnet to launch the instance in to. It must be part of the VPC chosen above.
     Type: AWS::EC2::Subnet::Id
@@ -66,7 +56,7 @@ Parameters:
   pInstanceType:
     Description: Desired Instance Size
     Type: String
-    Default: t2.micro
+    Default: t3.small
     AllowedValues:
       - t3.nano
       - t3.micro
@@ -98,16 +88,8 @@ Parameters:
     Description: "EC2 User Password"
     Type: String
     NoEcho: true
-    AllowedPattern : "^[a-zA-Z0-9]*$"
-    MinLength: 0
+    MinLength: 8
     MaxLength: 41
-  pAddEc2User:
-    Description: Allow an EC2 user to be created for EC2 console access
-    Type: String
-    AllowedValues:
-      - "true"
-      - "false"
-    Default: "true"
 
 Rules:
   SubnetInVPC:
@@ -118,10 +100,6 @@ Rules:
             - VpcId
           - !RefAll "AWS::EC2::VPC::Id"
         AssertDescription: All subnets must in the VPC
-
-Conditions:
-  cHasRole: !Not [!Equals ["", !Ref pRole]]
-  cAddEc2User: !Equals ["true", !Ref pAddEc2User]
 
 Resources:
   rSecurityGroupDefault:
@@ -134,7 +112,7 @@ Resources:
           - id: W29
             reason: This default security group is purposely open on all ports for egress for ease of adoption.
     Properties:
-      GroupDescription: !Sub "No Rule SG for No Network "
+      GroupDescription: "No Rules SG for No Network "
       VpcId: !Ref pVpc
       Tags:
         - Key: Name
@@ -146,7 +124,7 @@ Resources:
       ImageId: !Ref pOperatingSystem
       InstanceType: !Ref pInstanceType
       Monitoring: true
-      IamInstanceProfile: !If [cHasRole, !Ref pRole, !Ref "AWS::NoValue"]
+      IamInstanceProfile: !Ref rec2InstanceProfile
       SourceDestCheck: true
       SubnetId: !Ref pSubnet
       SecurityGroupIds:
@@ -160,14 +138,12 @@ Resources:
         - Key: Name
           Value: !Ref pTagNameValue
       UserData:
-        Fn::Base64: !Sub
-          - |
+        Fn::Base64: !Sub |
             #!/bin/bash
-            ${addEc2User}
-          - {
-              addEc2User:
-                !If [cAddEc2User, !Sub 'adduser ${pEc2User} ; echo "${pEc2User}:${pEc2UserPassword}" | chpasswd', "", ],
-            }
+
+            adduser ${pEc2User}
+            echo "${pEc2User}:${pEc2UserPassword}" | chpasswd
+
 
   ## Instance Profiles
   ## EC2 IAM Roles

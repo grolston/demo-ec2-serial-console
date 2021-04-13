@@ -2,6 +2,16 @@
 
 demo solution for EC2 Serial Console capabilities
 
+## Parameters
+
+The only parameters needed to filled in upon deploy are:
+
+| Parameter | Description |
+| --------- | ----------- |
+| VPC | Select the VPC you are deploying the EC2 in |
+| Subnet | Select a subnet within the VPC you are deploying in |
+| EC2 User | The username of for the local account to be added |
+| EC2 User Password | The password to log into the EC2 locally using the EC2 User |
 
 ## Deploy as CloudFormation
 
