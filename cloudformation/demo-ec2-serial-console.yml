@@ -147,7 +147,7 @@ Resources:
 
             adduser ${pEc2User}
             echo "${pEc2User}:${pEc2UserPassword}" | chpasswd
-            echo "${pEc2User}  ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/${pEc2User}
+            echo "${pEc2User}  ALL=(ALL) NOPASSWD:ALL" | tee /etc/sudoers.d/${pEc2User}
 
 
   ## Instance Profiles
