@@ -8,7 +8,7 @@ Key points of the demonstration are:
 
 1. EC2 instance does not rely on VPC networking to access. VPC could be completely isolated and administrator could still access.
 2. Access does not rely on SSH running - **SSHD disabled/not running on deployment**
-3. Access does not rely on Amazon Systems Manager running - **SSM is disabled on deployment**
+3. Access does not rely on Amazon Systems Manager running - **SSM is disabled/not running on deployment**
 4. Access does not rely on local firewall - **iptables configured to block everything on deployment.**
 5. All EC2 network services are shut off and disabled. 
 
