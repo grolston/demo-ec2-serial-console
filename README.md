@@ -4,7 +4,7 @@ Demo solution for EC2 Serial Console capabilities. The purpose of the demonstrat
 
 > **Note:** The EC2 deployed in the demo has networking completely disabled to simulate no network access (inbound and outbound).
 
-Key points for the demonstration are:
+Key points of the demonstration are:
 
 1. EC2 instance does not rely on VPC networking to access. VPC could completed isolated and administrator could access.
 2. Access does not rely on SSH running - SSHD disabled/not running on deployment
