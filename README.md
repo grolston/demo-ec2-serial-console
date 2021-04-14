@@ -14,6 +14,8 @@ Key points of the demonstration are:
 
 In summary, the demonstration deploys a network impaired EC2 that can still be accessed by administrators.
 
+[![Launch Stack](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=demo-ec2-serial-console&templateURL=https://rolston-cloud-library.s3-us-west-2.amazonaws.com/demo-ec2-serial-console/demo-ec2-serial-console.yml)
+
 ## Prerequisites
 
 The following prerequisites need to be met to deploy:
