@@ -1,4 +1,4 @@
-# demo-ec2-serial-console
+# Ec2 Serial Console Demonstration
 
 Demo solution for EC2 Serial Console capabilities. The purpose of the demonstration is to show that the EC2 serial console can be leverage to access your EC2 instance even when networking is restricted or entirely blocked. The stack deployed creates a single EC2 instance that leverages AWS Nitro instances capable of leveraging the EC2 Serial Console connection. The EC2 deployed has networking cut off to any IP address except 127.0.0.1.
 
@@ -10,6 +10,13 @@ Key points for the demonstration are:
 4. Access does not rely on local firewall - iptables configured to block everything on deployment.
 
 In summary, the demonstration deploys a network impaired EC2 that can still be accessed by administrators.
+
+## Prerequisites
+
+The following prerequisites need to be met to deploy:
+
+1. Ability to deploy Nitro System EC2 instances
+2. A VPC of some type (internet access not required)
 
 ## Parameters
 
